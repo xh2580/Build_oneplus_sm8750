@@ -154,14 +154,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 [![Star History Chart](https://api.star-history.com/svg?repos=showdo/Build_Oneplus_Realme_Action&type=Date)](https://star-history.com/#showdo/Build_Oneplus_Realme_Action&Date)
 
 ---
-
-## 📞 联系方式
-
-如有问题或建议，请通过以下方式联系：
-
-- **Telegram**: [@qdykernel](https://t.me/qdykernel)
-- **GitHub Issues**: [新建 Issue](https://github.com/showdo/Build_Oneplus_Realme_Action/issues)
-- **酷安**: 私信 [@Q1udaoyu](http://www.coolapk.com/u/1624571)
-
----
 **维护状态**: 🟢 活跃维护中
