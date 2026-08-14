@@ -148,13 +148,13 @@ jobs:
           if [ -z "${{ github.event.inputs.custom_kernel_suffix }}" ]; then
             case "${{ env.DEVICES_NAME }}" in
              oneplus_pad_2_pro)
-                DEFAULT_SUFFIX='-android15-8-g096cdb6ecefc-ab14358676-4k'
+                DEFAULT_SUFFIX='-android15-8-g2e6b9c3812c5-ab15114928-4k'
               ;;
             oneplus_ace5_ultra)
-                DEFAULT_SUFFIX='-android15-8-ge6068c2aa11d-abogki454747580-4k'
+                DEFAULT_SUFFIX='-android15-8-ge58033dc8ea6-abogki498046332-4k'
               ;;
             oneplus_13 | oneplus_13t | oneplus_ace5_pro | oneplus_ace_6 | oneplus_pad_2 | realme_GT7 | realme_GT7pro_Speed | realme_GT8)
-                DEFAULT_SUFFIX='-android15-8-g7e1f3c083cc6-abogki467167594-4k'
+                DEFAULT_SUFFIX='-android15-8-g93e223c276e7-abogki500782043-4k'
               ;;
             realme_GT7pro)
                 DEFAULT_SUFFIX='-android15-8-gf4dc45704e54-abogki446052083-4k'
@@ -174,13 +174,13 @@ jobs:
           if [ -z "${{ github.event.inputs.custom_kernel_time }}" ]; then
             case "${{ env.DEVICES_NAME }}" in
               oneplus_pad_2_pro)
-                  KERNEL_TIME='Tue Oct 28 09:04:21 UTC 2025'
+                  KERNEL_TIME='Mon Mar 30 10:41:25 UTC 2026'
                 ;;
               oneplus_ace5_ultra)
-                  KERNEL_TIME='Tue Jul 1 19:48:18 UTC 2025'
+                  KERNEL_TIME='Sun Mar 29 12:31:26 UTC 2026'
                 ;;
               oneplus_13 | oneplus_13t | oneplus_ace5_pro | oneplus_ace_6 | oneplus_pad_2 |realme_GT7 | realme_GT7pro_Speed | realme_GT8)
-                  KERNEL_TIME='Mon Dec 8 04:00:43 UTC 2025'
+                  KERNEL_TIME='Wed Apr  8 15:08:30 UTC 2026'
                 ;;
               realme_GT7pro)
                   KERNEL_TIME='Fri Sep 19 06:13:40 UTC 2025'
@@ -198,7 +198,6 @@ jobs:
           rm -rf kernel_workspace
           mkdir kernel_workspace
           cd kernel_workspace
-          
           sudo apt-mark hold firefox &&
           sudo apt-mark hold libc-bin &&
           sudo apt purge man-db &&
@@ -224,7 +223,7 @@ jobs:
             mv "android_kernel_common_oneplus_sm8750-oneplus-${REPO_MANIFEST}" common
           fi
           rm -rf common.zip 
-          echo "正在克隆llvm-clang18工具链..."
+          echo "正在克隆 llvm-clang18 工具链..."
           mkdir -p clang18 &&
           aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang18-r510928/clang-r510928.zip -o clang.zip &&
           unzip -q clang.zip -d clang18 &&
@@ -233,19 +232,15 @@ jobs:
           aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang18-r510928/build-tools.zip -o build-tools.zip &&
           unzip -q build-tools.zip &&
           rm -rf build-tools.zip &
-          sudo rm -rf /usr/share/dotnet &
-          sudo rm -rf /usr/local/lib/android &
-          sudo rm -rf /opt/ghc &
-          sudo rm -rf /opt/hostedtoolcache/CodeQL &
           wait
-          echo "所有源码及llvm-Clang18工具链初始化完成！"
+          echo "所有源码及 llvm-Clang18 工具链初始化完成！"
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
-
+          
       - name: 🛠 Set ccache DIR(配置 ccache 目录)
         run: |
           echo "CCACHE_DIR=$HOME/.ccache_${{ env.DEVICES_NAME }}" >> $GITHUB_ENV
@@ -411,14 +406,9 @@ jobs:
 
       - name: 🔧 Apply Sched Patch (应用完美风驰补丁)
         run: |
-          FORCE_SCX=false
-          if [ "${{ env.ENABLE_DROIDSPACES }}" = "true" ] && [ "${{ env.ENABLE_SCX }}" != "true" ]; then
-            echo "::notice::Droidspaces 依赖完美风驰 (SCX)，已自动启用 SCX 补丁"
-            FORCE_SCX=true
-          fi
           if [ "$SCHED_FILE" = "none" ]; then
             echo "该机型自带风驰，跳过所有补丁应用"
-          elif [ "${{ env.ENABLE_SCX }}" = "true" ] || [ "$FORCE_SCX" = "true" ]; then
+          else
             cd kernel_workspace/common
             if [ "${DEVICES_NAME}" = "oneplus_ace5_ultra" ] || [ "${DEVICES_NAME}" = "realme_GT7" ] || [ "${DEVICES_NAME}" = "oneplus_pad_2" ]; then
               git clone https://github.com/Numbersf/SCHED_PATCH.git -b "mt6991"
@@ -446,32 +436,32 @@ jobs:
             echo "OGKI转换GKI_patch完成"
           fi
 
-      - name: 🔧 Add Re-Kernel Support (添加Re-Kernel支持)
+      - name: 🔧 Add Re-Kernel Support (添加 Re-Kernel 支持)
         if: ${{ env.ENABLE_REKERNEL == 'true' }}
         run: |
-          cd kernel_workspace
-          VERSION=$(awk -F'=' '/^VERSION[ \t]*=/ {gsub(/ /,"",$2); print $2}' common/Makefile)
-          PATCHLEVEL=$(awk -F'=' '/^PATCHLEVEL[ \t]*=/ {gsub(/ /,"",$2); print $2}' common/Makefile)
-          echo "内核版本: ${VERSION}.${PATCHLEVEL}"
-          [ ! -d "Re-Kernel" ] && git clone --depth 1 https://github.com/Sakion-Team/Re-Kernel.git
-          RE_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Re-Kernel/LKM-Source"
-          cd common
-          grep -q 'source "drivers/rekernel/Kconfig"' drivers/Kconfig || \
-            sed -i '/endmenu/i source "drivers/rekernel/Kconfig"' drivers/Kconfig
-          grep -q 'obj-$(CONFIG_REKERNEL)' drivers/Makefile || \
-            printf '\n# Re-Kernel\nobj-$(CONFIG_REKERNEL) += rekernel/\n' >> drivers/Makefile
-          mkdir -p drivers/rekernel
-          cp ${RE_DIR}/* drivers/rekernel/
-          TARGET="KERNEL_${VERSION}_${PATCHLEVEL}"
-          if grep -q "$TARGET" drivers/rekernel/rekernel.h; then
-            sed -i "s|^[[:space:]]*//[[:space:]]*#define[[:space:]]\+$TARGET|#define $TARGET|" drivers/rekernel/rekernel.h
-            echo "CONFIG_REKERNEL=m" >> arch/arm64/configs/gki_defconfig
-            echo "CONFIG_REKERNEL_NETWORK=y" >> arch/arm64/configs/gki_defconfig
-            echo "✅ Re-Kernel 配置完成"
-          else
-            echo "⚠️ 不支持的内核版本: $TARGET"
-          fi
-
+            cd kernel_workspace
+            VERSION=$(awk -F'=' '/^VERSION[ \t]*=/ {gsub(/ /,"",$2); print $2}' common/Makefile)
+            PATCHLEVEL=$(awk -F'=' '/^PATCHLEVEL[ \t]*=/ {gsub(/ /,"",$2); print $2}' common/Makefile)
+            echo "内核版本: ${VERSION}.${PATCHLEVEL}"
+            [ ! -d "Re-Kernel" ] && git clone --depth 1 https://github.com/Sakion-Team/Re-Kernel.git
+            RE_DIR="${GITHUB_WORKSPACE}/kernel_workspace/Re-Kernel/LKM-Source"
+            cd common
+            grep -q 'source "drivers/rekernel/Kconfig"' drivers/Kconfig || \
+              sed -i '/endmenu/i source "drivers/rekernel/Kconfig"' drivers/Kconfig
+            grep -q 'obj-$(CONFIG_REKERNEL)' drivers/Makefile || \
+              printf '\n# Re-Kernel\nobj-$(CONFIG_REKERNEL) += rekernel/\n' >> drivers/Makefile
+            mkdir -p drivers/rekernel
+            cp ${RE_DIR}/* drivers/rekernel/
+            TARGET="KERNEL_${VERSION}_${PATCHLEVEL}"
+            if grep -q "$TARGET" drivers/rekernel/rekernel.h; then
+              sed -i "s|^[[:space:]]*//[[:space:]]*#define[[:space:]]\+$TARGET|#define $TARGET|" drivers/rekernel/rekernel.h
+              echo "CONFIG_REKERNEL=m" >> arch/arm64/configs/gki_defconfig
+              echo "CONFIG_REKERNEL_NETWORK=y" >> arch/arm64/configs/gki_defconfig
+              echo "✅ Re-Kernel 配置完成"
+            else
+              echo "⚠️ 不支持的内核版本: $TARGET"
+            fi
+          
       - name: 🔧 Add adios_ioscheduler (添加 adios_ioscheduler 支持)
         if: ${{ env.ENABLE_ADIOS == 'true' }}
         working-directory: kernel_workspace/common
@@ -516,30 +506,30 @@ jobs:
           git apply -p1 < 001-lz4.patch || true
           patch -p1 < 002-zstd.patch || true
           
-      - name: 🔧 Set Baseband-guard (开启BBG基带守护)
+      - name: 🔧 Set Baseband-guard (开启 BBG 基带守护)
         if: ${{ env.ENABLE_BBG == 'true' }}
         run: |
-          echo "正在启用启用内核级基带保护支持…"
-          cd kernel_workspace
-          wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
-          echo "CONFIG_BBG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./common/security/Kconfig
+          cd kernel_workspace/common
+          echo "正在启用 BBG 基带守护…"
+          curl -LSs https://raw.githubusercontent.com/vc-teahouse/Baseband-guard/main/setup.sh | bash
+          sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' ./security/Kconfig
 
           
-      - name: ⚙️ Set ReSukiSU (设置 ReSukiSU)
+      - name: ⚙️ Set ReSukiSU (设置ReSukiSU)
+        if: ${{ env.ENABLE_KSU == 'true' }}
         id: ksu_step
         run: |
           cd kernel_workspace
-          echo "正在配置 ReSukiSU..."
+          echo "正在配置ReSukiSU..."
           curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/refs/heads/main/kernel/setup.sh" | bash -s main
           cd ./KernelSU 
           KSU_VERSION=$(expr $(git rev-list --count main) + 30700 2>/dev/null || echo 114514)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
-
+          
             
       - name: 🔧 Set up SUSFS (配置 SUSFS)
-        if: ${{ env.ENABLE_SUSFS == 'true' }}
+        if: ${{ env.ENABLE_SUSFS == 'true' && env.ENABLE_KSU == 'true' }}
         run: |
           cd kernel_workspace
           git clone --depth=1 https://github.com/cctv18/susfs4oki.git susfs4ksu -b oki-android15-6.6
@@ -551,22 +541,33 @@ jobs:
           patch -p1 < 50_add_susfs_in_gki-android15-6.6.patch || true
           patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           echo "[OK] SUSFS 补丁处理流程全部完成"
-
+          
       - name: 🔧 Add Droidspaces Support (添加 Droidspaces 支持)
         if: ${{ env.ENABLE_DROIDSPACES == 'true' }}
         working-directory: kernel_workspace/common
         run: |
-          PATCH_FILE="${GITHUB_WORKSPACE}/patch/Droidspaces_6.6.patch"
-          if [ ! -f "$PATCH_FILE" ]; then
-            echo "::error::Patch 不存在: $PATCH_FILE"
+          echo "==> 开始添加 Droidspaces 支持"
+          patch_file="Droidspaces_6.6.patch"
+          patch_path="${GITHUB_WORKSPACE}/patch/${patch_file}"
+          
+          if [ ! -f "$patch_path" ]; then
+            echo "::error::Patch 不存在: $patch_path"
             exit 1
           fi
-          if patch -p1 --forward --ignore-whitespace < "$PATCH_FILE"; then
-            echo "Droidspaces patch 应用成功"
+          
+          echo "==> 正在应用: $patch_file"
+          if patch -p1 --forward < "$patch_path"; then
+            echo "==> Patch 应用成功: $patch_file"
           else
-            echo "::error::Droidspaces patch 应用失败"
+            echo "::error::Patch 应用失败: $patch_file"
             exit 1
           fi
+          echo "==> Droidspaces patch 添加完成"
+
+      - name: 🔧 Apply ntsync Patch (应用 ntsync 补丁)
+        if: ${{ env.ENABLE_DROIDSPACES == 'true' }}
+        working-directory: kernel_workspace/common
+        run: |
           echo "==> 开始应用 ntsync 补丁..."
           for PATCH_NAME in "ntsync_base.patch" "ntsync_compat_6.6.patch"; do
             PATCH_PATH="${GITHUB_WORKSPACE}/patch/${PATCH_NAME}"
@@ -582,32 +583,36 @@ jobs:
           done
           echo "==> ntsync 补丁应用完成"
 
-          
       - name: 🔧 Set gki_defconfig (设置编译配置) 
         run: |
           cd kernel_workspace
-          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%-Re-TG@qdykernel"' >> ./common/arch/arm64/configs/gki_defconfig
           
-          if [ "${{ env.ENABLE_SUSFS }}" == 'true' ];then
-            echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          if [ "${{ env.ENABLE_KSU }}" = "true" ]; then
+            echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo 'CONFIG_KSU_FULL_NAME_FORMAT="%TAG_NAME%-%COMMIT_SHA%-Re-TG@qdykernel"' >> ./common/arch/arm64/configs/gki_defconfig
+            
+            if [ "${{ env.ENABLE_SUSFS }}" == 'true' ];then
+              echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_KSU_SUSFS_SUS_MAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+            else
+              echo "未启用SUSFS 跳过SUSFS配置"
+            fi
           else
-            echo "未启用SUSFS 跳过SUSFS配置"
+            echo "未启用KSU，将不会集成Root及SUSFS"
           fi
           if [ "${{ env.ENABLE_DROIDSPACES }}" == 'true' ];then
             echo "应用Droidspaces推荐配置"
@@ -624,9 +629,9 @@ jobs:
             echo "CONFIG_IP_SET_HASH_IP=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_IP_SET_HASH_NET=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_NETFILTER_XT_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # ntsync 驱动 (Droidspaces 配套组件)
             echo "CONFIG_NTSYNC=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-          
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
 
@@ -638,11 +643,11 @@ jobs:
       - name: 🔧 Set Kernel name (设置内核名称)
         run: |
           cd kernel_workspace
-          echo "内核后缀: $DEFAULT_SUFFIX"
+          echo "内核后缀：$DEFAULT_SUFFIX"
           ESCAPED_SUFFIX=$(printf '%s\n' "$DEFAULT_SUFFIX" | sed 's:[\/&]:\\&:g')
           sudo sed -i "s/-4k/$ESCAPED_SUFFIX/g" ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/${scm_version}//' ./common/scripts/setlocalversion
-          
+
       - name: 📥 Start build timer (构建计时开始)
         run: 
           echo "BUILD_START=$(date +%s)" >> $GITHUB_ENV
@@ -657,7 +662,7 @@ jobs:
           CLANG_DIR="$WORKDIR/kernel_workspace/clang18/bin"
           CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
           LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
-          pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
+          pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole 版本：未安装" || echo "pahole 版本：$pahole_version"
           export CCACHE_LOGFILE="${{ github.workspace }}/kernel_workspace/ccache.log"
           export CCACHE_COMPILERCHECK="none"
           export CCACHE_BASEDIR="${{ github.workspace }}"
@@ -699,10 +704,14 @@ jobs:
           chmod +x cc-wrapper ld-wrapper
           LD_PRELOAD=$PRELOAD_LIBS stat ./Makefile
           export KBUILD_BUILD_TIMESTAMP="${KERNEL_TIME}"
+          sudo rm -rf /usr/share/dotnet &
+          sudo rm -rf /usr/local/lib/android &
+          sudo rm -rf /opt/ghc &
+          sudo rm -rf /opt/hostedtoolcache/CodeQL &
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD="ld.lld" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig &&
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="$(pwd)/cc-wrapper" LD="$(pwd)/ld-wrapper" HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
           LD_PRELOAD=$PRELOAD_LIBS stat ./Makefile
-          echo "ccache状态："
+          echo "ccache 状态："
           ccache -s
       
       - name: 🕒 Calculate build time (计算构建时间)
